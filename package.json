@@ -1,0 +1,30 @@
+{
+  "dependencies": {
+    "@agentmail/convex": "^0.1.0",
+    "@convex-dev/auth": "^0.0.95",
+    "@convex-dev/static-hosting": "^0.2.1",
+    "@firecrawl/firecrawl-convex": "^0.1.1",
+    "convex": "^1.46.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^26.6.2",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^5.0.0",
+    "vite": "^8.3.0"
+  },
+  "name": "bill-buster",
+  "private": true,
+  "scripts": {
+    "build": "tsc --noEmit && vite build",
+    "dev": "vite",
+    "deploy": "npx @convex-dev/static-hosting deploy"
+  },
+  "type": "module",
+  "version": "0.1.0"
+}
