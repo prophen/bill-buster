@@ -214,6 +214,17 @@ export const listChecksInternal = internalQuery({
   },
 });
 
+export const clearPriceChecks = internalMutation({
+  args: { billId: v.id("bills") },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("priceChecks")
+      .withIndex("by_bill", (q) => q.eq("billId", args.billId))
+      .collect();
+    for (const c of existing) await ctx.db.delete(c._id);
+  },
+});
+
 export const saveCallScript = internalMutation({
   args: { draftId: v.id("drafts"), script: v.string() },
   handler: async (ctx, args) => {
