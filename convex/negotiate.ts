@@ -256,6 +256,38 @@ The caller is a long-time customer, polite but firm.`,
   },
 });
 
+// User-triggered: refresh competitor research without touching drafts.
+// Used after the ZIP code changes so prices reflect the service area.
+export const recheckPrices = action({
+  args: { billId: v.id("bills") },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Sign in first.");
+    const bill = await ctx.runQuery(internal.bills.getInternal, {
+      billId: args.billId,
+    });
+    if (!bill) throw new Error("Bill not found.");
+    if (bill.userId !== userId) throw new Error("Not your bill.");
+    const prevStatus = bill.status;
+    await ctx.runMutation(internal.bills.setStatusInternal, {
+      billId: args.billId,
+      status: "checking",
+    });
+    try {
+      await ctx.runMutation(internal.bills.clearPriceChecks, {
+        billId: args.billId,
+      });
+      const findings = await checkPrices(ctx, args.billId);
+      return { findings: findings.length };
+    } finally {
+      await ctx.runMutation(internal.bills.setStatusInternal, {
+        billId: args.billId,
+        status: prevStatus,
+      });
+    }
+  },
+});
+
 // Weekly cron: re-check prices on active bills without drafting new emails.
 export const recheckActiveBills = internalAction({
   args: {},
@@ -263,6 +295,9 @@ export const recheckActiveBills = internalAction({
     const bills = await ctx.runQuery(internal.bills.listActiveInternal, {});
     for (const bill of bills) {
       try {
+        await ctx.runMutation(internal.bills.clearPriceChecks, {
+          billId: bill._id,
+        });
         await checkPrices(ctx, bill._id);
       } catch (e) {
         console.error(`Recheck failed for ${bill._id}:`, e);
