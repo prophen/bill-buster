@@ -185,6 +185,23 @@ export const setStatusInternal = internalMutation({
   },
 });
 
+export const listChecksInternal = internalQuery({
+  args: { billId: v.id("bills") },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("priceChecks")
+      .withIndex("by_bill", (q) => q.eq("billId", args.billId))
+      .collect();
+  },
+});
+
+export const saveCallScript = internalMutation({
+  args: { draftId: v.id("drafts"), script: v.string() },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.draftId, { callScript: args.script });
+  },
+});
+
 export const saveExtraction = internalMutation({
   args: {
     billId: v.id("bills"),
@@ -235,15 +252,16 @@ export const saveDraft = internalMutation({
     userId: v.string(),
     subject: v.string(),
     body: v.string(),
-    to: v.string(),
   },
   handler: async (ctx, args) => {
+    // Never store an AI-generated recipient: models invent addresses.
+    // The user enters the real destination at the approval checkpoint.
     const id = await ctx.db.insert("drafts", {
       billId: args.billId,
       userId: args.userId,
       subject: args.subject,
       body: args.body,
-      to: args.to,
+      to: "",
       status: "pending",
       createdAt: Date.now(),
     });
