@@ -1,10 +1,13 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import {
+  mutation,
+  query,
+  internalQuery,
+  internalMutation,
+  internalAction,
+} from "./_generated/server";
 import { internal, components } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { AgentMail } from "@agentmail/convex";
-
-const agentmail = new AgentMail(components.agentmail);
 
 async function resolveInboxId(ctx: {
   runQuery: (q: any, a: any) => Promise<any>;
@@ -29,6 +32,8 @@ async function resolveInboxId(ctx: {
 }
 
 // User-approved send. The draft is always reviewed on screen before this runs.
+// Delivery goes straight to the AgentMail REST API from an action (app code
+// sees deployment env vars; the component's bundled code cannot).
 export const sendDraft = mutation({
   args: {
     draftId: v.id("drafts"),
@@ -42,32 +47,109 @@ export const sendDraft = mutation({
     const draft = await ctx.db.get(args.draftId);
     if (!draft || draft.userId !== userId)
       throw new Error("Draft not found.");
+    if (draft.status === "sending") throw new Error("Already sending.");
+    // A "sent" draft with confirmed delivery is final. A "sent" draft without
+    // delivery confirmation (e.g. the old component queue failed silently)
+    // can be re-sent.
+    if (draft.status === "sent" && draft.deliveryStatus === "sent")
+      throw new Error("Already sent.");
+    if (draft.status !== "pending" && draft.status !== "sent")
+      throw new Error("Already sent.");
     if (!args.to.trim()) throw new Error("A recipient address is required.");
-    // Sending is queued in the background, so a draft can read "sent" while
-    // delivery actually failed. Allow retry in that case, block true doubles.
-    if (draft.status === "sent") {
-      const prior = draft.outboundId
-        ? await ctx.runQuery(components.agentmail.lib.getOutboundStatus, {
-            outboundId: draft.outboundId as never,
-          })
-        : null;
-      if (prior && prior.status !== "failed")
-        throw new Error("Already sent.");
-    }
 
-    const { inboxId } = await resolveInboxId(ctx);
-    const outboundId = await agentmail.sendMessage(ctx, inboxId, {
+    await ctx.db.patch(args.draftId, {
+      status: "sending",
       to: args.to.trim(),
       subject: args.subject,
-      text: args.body,
-      labels: ["bill-buster", "negotiation"],
+      body: args.body,
+      sendError: undefined,
     });
-
-    await ctx.runMutation(internal.bills.markDraftSent, {
+    await ctx.scheduler.runAfter(0, internal.outreach.deliverDraft, {
       draftId: args.draftId,
-      outboundId: String(outboundId),
     });
-    return { outboundId: String(outboundId) };
+    return { queued: true };
+  },
+});
+
+export const getDraft = internalQuery({
+  args: { draftId: v.id("drafts") },
+  handler: async (ctx, args) => ctx.db.get(args.draftId),
+});
+
+export const markDraftSendFailed = internalMutation({
+  args: { draftId: v.id("drafts"), error: v.string() },
+  handler: async (ctx, args) => {
+    const draft = await ctx.db.get(args.draftId);
+    if (!draft) throw new Error("Draft not found.");
+    await ctx.db.patch(args.draftId, {
+      status: "pending",
+      sendError: args.error,
+    });
+    await ctx.db.patch(draft.billId, {
+      status: "draft_ready",
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+// Actually delivers the queued draft via the AgentMail REST API.
+export const deliverDraft = internalAction({
+  args: { draftId: v.id("drafts") },
+  handler: async (ctx, args) => {
+    const draft = await ctx.runQuery(internal.outreach.getDraft, {
+      draftId: args.draftId,
+    });
+    if (!draft || draft.status !== "sending") return;
+    const apiKey = process.env.AGENTMAIL_API_KEY;
+    const inboxId = process.env.AGENTMAIL_INBOX_ID;
+    if (!apiKey || !inboxId) {
+      await ctx.runMutation(internal.outreach.markDraftSendFailed, {
+        draftId: args.draftId,
+        error: "Email sending is not configured on this deployment.",
+      });
+      return;
+    }
+    const baseUrl = (
+      process.env.AGENTMAIL_BASE_URL ?? "https://api.agentmail.to/v0"
+    ).replace(/\/$/, "");
+    try {
+      const res = await fetch(
+        `${baseUrl}/inboxes/${inboxId}/messages/send`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            to: draft.to,
+            subject: draft.subject,
+            text: draft.body,
+            labels: ["bill-buster", "negotiation"],
+          }),
+        },
+      );
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(
+          `AgentMail rejected the send (${res.status}): ${text.slice(0, 200)}`,
+        );
+      }
+      const data = (await res.json()) as {
+        message_id?: string;
+        thread_id?: string;
+      };
+      await ctx.runMutation(internal.bills.markDraftSent, {
+        draftId: args.draftId,
+        outboundId: String(data.message_id ?? ""),
+        deliveryStatus: "sent",
+      });
+    } catch (e) {
+      await ctx.runMutation(internal.outreach.markDraftSendFailed, {
+        draftId: args.draftId,
+        error: e instanceof Error ? e.message : "Send failed.",
+      });
+    }
   },
 });
 
@@ -84,17 +166,20 @@ export const discardDraft = mutation({
   },
 });
 
-// Live delivery status for a sent draft (subscribable from the UI).
+// Delivery status for a draft (subscribable from the UI).
 export const sendStatus = query({
   args: { draftId: v.id("drafts") },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) return null;
     const draft = await ctx.db.get(args.draftId);
-    if (!draft || draft.userId !== userId || !draft.outboundId) return null;
-    return await ctx.runQuery(components.agentmail.lib.getOutboundStatus, {
-      outboundId: draft.outboundId as never,
-    });
+    if (!draft || draft.userId !== userId) return null;
+    return {
+      status: draft.status,
+      deliveryStatus: draft.deliveryStatus ?? null,
+      sendError: draft.sendError ?? null,
+      outboundId: draft.outboundId ?? null,
+    };
   },
 });
 
