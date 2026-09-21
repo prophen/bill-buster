@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
@@ -47,6 +47,12 @@ export default function BillDetail({
   const pendingDraft = drafts.find((d) => d.status === "pending");
   const sendingDraft = drafts.find((d) => d.status === "sending");
   const sentDraft = drafts.find((d) => d.status === "sent");
+
+  // The "Sending..." banner is set before the background delivery finishes;
+  // clear it once the draft leaves the sending state.
+  useEffect(() => {
+    if (!sendingDraft) setNotice((n) => (n?.startsWith("Sending") ? null : n));
+  }, [sendingDraft]);
 
   async function runNegotiate() {
     setBusy(true);
