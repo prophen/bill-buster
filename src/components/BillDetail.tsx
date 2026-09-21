@@ -94,12 +94,11 @@ export default function BillDetail({
     }
   }
 
-  async function handleGenerateScript() {
-    if (!pendingDraft) return;
+  async function handleGenerateScript(draftId: Id<"drafts">) {
     setScriptBusy(true);
     setNotice(null);
     try {
-      await generateScript({ draftId: pendingDraft._id });
+      await generateScript({ draftId });
     } catch (e) {
       setNotice(e instanceof Error ? e.message : "Script generation failed.");
     } finally {
@@ -107,10 +106,9 @@ export default function BillDetail({
     }
   }
 
-  async function copyScript() {
-    if (!pendingDraft?.callScript) return;
+  async function copyScript(text: string) {
     try {
-      await navigator.clipboard.writeText(pendingDraft.callScript);
+      await navigator.clipboard.writeText(text);
       setNotice("Script copied to clipboard.");
     } catch {
       setNotice("Copy failed. Select the text manually.");
@@ -266,13 +264,13 @@ export default function BillDetail({
                   </pre>
                   <div className="flex gap-2 mt-3">
                     <button
-                      onClick={copyScript}
+                      onClick={() => pendingDraft.callScript && copyScript(pendingDraft.callScript)}
                       className="rounded-lg border border-slate-300 px-4 py-2 hover:bg-slate-100"
                     >
                       Copy script
                     </button>
                     <button
-                      onClick={handleGenerateScript}
+                      onClick={() => handleGenerateScript(pendingDraft._id)}
                       disabled={scriptBusy}
                       className="rounded-lg border border-slate-300 px-4 py-2 hover:bg-slate-100 disabled:opacity-50"
                     >
@@ -288,7 +286,7 @@ export default function BillDetail({
                     ask, and comebacks for pushback.
                   </p>
                   <button
-                    onClick={handleGenerateScript}
+                    onClick={() => handleGenerateScript(pendingDraft._id)}
                     disabled={scriptBusy}
                     className="mt-3 rounded-lg bg-violet-600 text-white px-4 py-2.5 font-medium hover:bg-violet-500 disabled:opacity-50"
                   >
@@ -406,6 +404,39 @@ export default function BillDetail({
                 Resend
               </button>
             </div>
+          </div>
+          <div className="mt-4 border-t border-slate-100 pt-4">
+            <p className="text-sm font-medium">Phone / chat script</p>
+            {sentDraft.callScript ? (
+              <>
+                <pre className="mt-2 whitespace-pre-wrap text-sm bg-slate-50 rounded-lg border border-slate-200 p-4 font-sans">
+                  {sentDraft.callScript}
+                </pre>
+                <div className="flex gap-2 mt-2">
+                  <button
+                    onClick={() => sentDraft.callScript && copyScript(sentDraft.callScript)}
+                    className="rounded-lg border border-slate-300 px-4 py-2 hover:bg-slate-100"
+                  >
+                    Copy script
+                  </button>
+                  <button
+                    onClick={() => handleGenerateScript(sentDraft._id)}
+                    disabled={scriptBusy}
+                    className="rounded-lg border border-slate-300 px-4 py-2 hover:bg-slate-100 disabled:opacity-50"
+                  >
+                    {scriptBusy ? "Writing..." : "Regenerate"}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <button
+                onClick={() => handleGenerateScript(sentDraft._id)}
+                disabled={scriptBusy}
+                className="mt-2 rounded-lg bg-violet-600 text-white px-4 py-2.5 font-medium hover:bg-violet-500 disabled:opacity-50"
+              >
+                {scriptBusy ? "Writing..." : "Generate phone script"}
+              </button>
+            )}
           </div>
           <p className="text-sm text-slate-500 mt-4">
             Got a lower rate? Record it so your savings total stays honest.
