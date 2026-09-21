@@ -37,3 +37,6 @@ Scaffolded the full app. Schema with bills, priceChecks, drafts, savings tables 
 ### 2026-09-20 - first real send (bounced on AI-guessed address)
 - End-to-end delivery proven: the direct-send action got a 2xx + message_id from AgentMail and SES attempted delivery. The message bounced (`550 5.1.0 Not our Customer`) because it went to `customer.service@xfinity.com`, an address the AI guessed at draft time; the retry path had reused the stored draft To instead of the address she typed. The bounce notification landed back in the Bill Buster inbox via the webhook.
 - Fixes: `sendDraft` accepts `force` for an explicit resend; the sent panel has a "Send to a different address" box so the recipient is always explicit; the draft prompt now says never to invent an email address (`convex/outreach.ts`, `convex/negotiate.ts`, `src/components/BillDetail.tsx`).
+
+### 2026-09-20 - phone/chat script tab
+- Added a "Phone / chat script" tab next to the email on pending drafts. It generates on demand from the same bill and competitor research: opener, the ask, pushback comebacks, close. Stored on the draft, with copy and regenerate buttons. New `negotiate.generateCallScript` action plus `drafts.callScript` field (`convex/negotiate.ts`, `convex/bills.ts`, `convex/schema.ts`, `src/components/BillDetail.tsx`).
