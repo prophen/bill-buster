@@ -30,6 +30,7 @@ export default function BillDetail({
   >({});
   const [newMonthly, setNewMonthly] = useState("");
   const [savingsNote, setSavingsNote] = useState("");
+  const [resendTo, setResendTo] = useState("");
 
   if (data === undefined) return <p className="text-slate-500">Loading...</p>;
   if (data === null)
@@ -94,6 +95,26 @@ export default function BillDetail({
         body: sentDraft.body,
       });
       setNotice("Sending again...");
+    } catch (e) {
+      setNotice(e instanceof Error ? e.message : "Send failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function resendToAddress() {
+    if (!sentDraft || !resendTo.trim()) return;
+    setBusy(true);
+    setNotice(null);
+    try {
+      await sendDraft({
+        draftId: sentDraft._id,
+        to: resendTo.trim(),
+        subject: sentDraft.subject,
+        body: sentDraft.body,
+        force: true,
+      });
+      setNotice(`Sending to ${resendTo.trim()}...`);
     } catch (e) {
       setNotice(e instanceof Error ? e.message : "Send failed.");
     } finally {
@@ -273,6 +294,27 @@ export default function BillDetail({
               {busy ? "Retrying..." : "Retry send"}
             </button>
           )}
+          <div className="mt-4 border-t border-slate-100 pt-4">
+            <p className="text-sm font-medium">Send to a different address</p>
+            <p className="text-xs text-slate-500 mt-1">
+              Currently addressed to {sentDraft.to}. Change it below to resend, for example to yourself for a test.
+            </p>
+            <div className="mt-2 flex gap-2">
+              <input
+                value={resendTo}
+                onChange={(e) => setResendTo(e.target.value)}
+                placeholder="you@example.com"
+                className="flex-1 rounded-lg border border-slate-300 px-3 py-2"
+              />
+              <button
+                onClick={resendToAddress}
+                disabled={busy || !resendTo.trim()}
+                className="rounded-lg bg-slate-900 text-white px-4 py-2 font-medium hover:bg-slate-700 disabled:opacity-50"
+              >
+                Resend
+              </button>
+            </div>
+          </div>
           <p className="text-sm text-slate-500 mt-4">
             Got a lower rate? Record it so your savings total stays honest.
           </p>
