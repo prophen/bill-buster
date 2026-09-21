@@ -96,9 +96,11 @@ export const markDraftSendFailed = internalMutation({
 export const deliverDraft = internalAction({
   args: { draftId: v.id("drafts") },
   handler: async (ctx, args) => {
+    console.log("[deliverDraft] start", args.draftId);
     const draft = await ctx.runQuery(internal.outreach.getDraft, {
       draftId: args.draftId,
     });
+    console.log("[deliverDraft] draft status", draft?.status);
     if (!draft || draft.status !== "sending") return;
     const apiKey = process.env.AGENTMAIL_API_KEY;
     const inboxId = process.env.AGENTMAIL_INBOX_ID;
@@ -112,6 +114,7 @@ export const deliverDraft = internalAction({
     const baseUrl = (
       process.env.AGENTMAIL_BASE_URL ?? "https://api.agentmail.to/v0"
     ).replace(/\/$/, "");
+    console.log("[deliverDraft] sending to", baseUrl, "inbox", inboxId);
     try {
       const res = await fetch(
         `${baseUrl}/inboxes/${inboxId}/messages/send`,
@@ -139,12 +142,14 @@ export const deliverDraft = internalAction({
         message_id?: string;
         thread_id?: string;
       };
+      console.log("[deliverDraft] sent, message", data.message_id);
       await ctx.runMutation(internal.bills.markDraftSent, {
         draftId: args.draftId,
         outboundId: String(data.message_id ?? ""),
         deliveryStatus: "sent",
       });
     } catch (e) {
+      console.log("[deliverDraft] failed", e instanceof Error ? e.message : e);
       await ctx.runMutation(internal.outreach.markDraftSendFailed, {
         draftId: args.draftId,
         error: e instanceof Error ? e.message : "Send failed.",
