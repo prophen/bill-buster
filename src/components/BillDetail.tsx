@@ -35,6 +35,14 @@ export default function BillDetail({
   const [draftTab, setDraftTab] = useState<"email" | "script">("email");
   const [scriptBusy, setScriptBusy] = useState(false);
 
+  // The "Sending..." banner is set before the background delivery finishes;
+  // clear it once no draft is in the sending state. Must run before any
+  // early return (rules of hooks).
+  useEffect(() => {
+    const sending = data?.drafts.some((d) => d.status === "sending");
+    if (!sending) setNotice((n) => (n?.startsWith("Sending") ? null : n));
+  }, [data]);
+
   if (data === undefined) return <p className="text-slate-500">Loading...</p>;
   if (data === null)
     return (
@@ -50,12 +58,6 @@ export default function BillDetail({
   const pendingDraft = drafts.find((d) => d.status === "pending");
   const sendingDraft = drafts.find((d) => d.status === "sending");
   const sentDraft = drafts.find((d) => d.status === "sent");
-
-  // The "Sending..." banner is set before the background delivery finishes;
-  // clear it once the draft leaves the sending state.
-  useEffect(() => {
-    if (!sendingDraft) setNotice((n) => (n?.startsWith("Sending") ? null : n));
-  }, [sendingDraft]);
 
   async function runNegotiate() {
     setBusy(true);
