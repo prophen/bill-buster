@@ -25,6 +25,7 @@ export default function AddBill({
   const [amount, setAmount] = useState("");
   const [billingPeriod, setBillingPeriod] = useState("monthly");
   const [accountHint, setAccountHint] = useState("");
+  const [zipCode, setZipCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,6 +45,7 @@ export default function AddBill({
         amount: n,
         billingPeriod,
         accountHint: accountHint.trim() || undefined,
+        zipCode: zipCode.trim() || undefined,
       });
       onDone(billId);
     } catch (err) {
@@ -111,16 +113,30 @@ export default function AddBill({
             className={input}
           />
         </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">
-            Account or plan (optional)
-          </label>
-          <input
-            value={accountHint}
-            onChange={(e) => setAccountHint(e.target.value)}
-            placeholder="Blast Pro 800 Mbps"
-            className={input}
-          />
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Account or plan (optional)
+            </label>
+            <input
+              value={accountHint}
+              onChange={(e) => setAccountHint(e.target.value)}
+              placeholder="Blast Pro 800 Mbps"
+              className={input}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              ZIP code (optional)
+            </label>
+            <input
+              value={zipCode}
+              onChange={(e) => setZipCode(e.target.value)}
+              placeholder="95814"
+              inputMode="numeric"
+              className={input}
+            />
+          </div>
         </div>
         {error && (
           <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">
