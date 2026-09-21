@@ -20,8 +20,8 @@ Rules:
 - Reference the specific competitor prices provided as leverage.
 - Ask for a specific outcome: match the competitor price, a loyalty discount, or a promo rate.
 - End with a simple call to action (reply, or a number to call).
-Reply with JSON only, no markdown fences: {"subject": "...", "body": "...", "to": "..."}.
-"to" should be the vendor billing or retention email if you know it, otherwise leave it empty. Never invent or guess an email address.`;
+Reply with JSON only, no markdown fences: {"subject": "...", "body": "..."}.
+Do not include a recipient address; the user enters the real destination when they review the draft.`;
 
 async function openAIJson(system: string, user: string): Promise<any> {
   const apiKey = process.env.OPENAI_API_KEY;
@@ -188,9 +188,67 @@ The sender is a long-time customer asking politely but firmly for a better rate.
       userId,
       subject: String(draft.subject ?? `Request to lower my ${bill.vendor} bill`),
       body: String(draft.body ?? ""),
-      to: String(draft.to ?? ""),
     });
     return { draftId, findings: findings.length };
+  },
+});
+
+const SCRIPT_SYSTEM = `You write phone and chat scripts that help people negotiate bills down.
+Rules:
+- Plain, natural spoken language. No em-dashes, no marketing speak.
+- Short sections with markdown headers: Before you call, Opener, The ask, If they push back, Close.
+- Reference the specific competitor prices provided as leverage.
+- Include 2 or 3 realistic pushbacks ("we can't change your rate", "that's a new-customer price") with a calm one-line response to each.
+- Keep the whole script under 250 words.
+Reply with JSON only, no markdown fences: {"script": "..."}. The script value itself may use markdown headers and bullets.`;
+
+// User-triggered: generate a phone/chat negotiation script from the same
+// bill and research the email draft used.
+export const generateCallScript = action({
+  args: { draftId: v.id("drafts") },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Sign in first.");
+    const draft = await ctx.runQuery(internal.outreach.getDraft, {
+      draftId: args.draftId,
+    });
+    if (!draft || draft.userId !== userId)
+      throw new Error("Draft not found.");
+    const bill = await ctx.runQuery(internal.bills.getInternal, {
+      billId: draft.billId,
+    });
+    if (!bill) throw new Error("Bill not found.");
+    const checks = await ctx.runQuery(internal.bills.listChecksInternal, {
+      billId: draft.billId,
+    });
+    const findingsText =
+      checks.length === 0
+        ? "No competitor pricing found online."
+        : checks
+            .map(
+              (c: any, i: number) =>
+                `${i + 1}. ${c.competitorName}${c.competitorPrice ? `, about $${c.competitorPrice}/mo` : ""}`,
+            )
+            .join("\n");
+    const result = await openAIJson(
+      SCRIPT_SYSTEM,
+      `Write a phone/chat negotiation script for this bill:
+Vendor: ${bill.vendor}
+Category: ${bill.category}
+Current price: $${bill.amount}/${bill.billingPeriod}
+
+Competitor and promo pricing found online:
+${findingsText}
+
+The caller is a long-time customer, polite but firm.`,
+    );
+    const script = String(result.script ?? "");
+    if (!script) throw new Error("Could not generate a script.");
+    await ctx.runMutation(internal.bills.saveCallScript, {
+      draftId: args.draftId,
+      script,
+    });
+    return { script };
   },
 });
 
