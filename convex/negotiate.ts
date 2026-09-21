@@ -197,8 +197,9 @@ const SCRIPT_SYSTEM = `You write phone and chat scripts that help people negotia
 Rules:
 - Plain, natural spoken language. No em-dashes, no marketing speak.
 - Short sections with markdown headers: Before you call, Opener, The ask, If they push back, Close.
-- Reference the specific competitor prices provided as leverage.
+- Name the specific competitors and their prices from the research provided, not just a price range.
 - Include 2 or 3 realistic pushbacks ("we can't change your rate", "that's a new-customer price") with a calm one-line response to each.
+- Add a retention beat: if the rep says they cannot adjust the rate, politely ask to be transferred to the retention or loyalty department, which usually has discount authority.
 - Keep the whole script under 250 words.
 Reply with JSON only, no markdown fences: {"script": "..."}. The script value itself may use markdown headers and bullets.`;
 
