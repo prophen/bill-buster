@@ -37,6 +37,7 @@ export default function BillDetail({
   const [draftTab, setDraftTab] = useState<"email" | "script">("email");
   const [zipInput, setZipInput] = useState<string | null>(null);
   const [scriptBusy, setScriptBusy] = useState(false);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   // The "Sending..." banner is set before the background delivery finishes;
   // clear it once no draft is in the sending state. Must run before any
@@ -108,8 +109,6 @@ export default function BillDetail({
       setScriptBusy(false);
     }
   }
-
-  const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   async function copyScript(text: string, key: string) {
     try {
