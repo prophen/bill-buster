@@ -79,7 +79,8 @@ async function checkPrices(
   const bill = await ctx.runQuery(internal.bills.getInternal, { billId });
   if (!bill) throw new Error("Bill not found.");
 
-  const query = `${bill.vendor} ${bill.category} cheaper alternatives promo pricing 2026`;
+  const zip = bill.zipCode ? ` ${bill.zipCode}` : "";
+  const query = `${bill.vendor} ${bill.category} cheaper alternatives promo pricing 2026${zip}`;
   let results: any[] = [];
   try {
     const search = await firecrawl.search(ctx as never, query, {
@@ -176,6 +177,7 @@ Vendor: ${bill.vendor}
 Category: ${bill.category}
 Current price: $${bill.amount}/${bill.billingPeriod}
 Account info: ${bill.accountHint ?? "not provided"}
+${bill.zipCode ? `Customer ZIP code: ${bill.zipCode}. Only cite competitor prices from providers that serve this area; if a price looks like it is not available there, leave it out.` : ""}
 
 Competitor and promo pricing found online:
 ${findingsText}
@@ -237,6 +239,7 @@ export const generateCallScript = action({
 Vendor: ${bill.vendor}
 Category: ${bill.category}
 Current price: $${bill.amount}/${bill.billingPeriod}
+${bill.zipCode ? `Customer ZIP code: ${bill.zipCode}. Only cite competitor prices from providers that serve this area.` : ""}
 
 Competitor and promo pricing found online:
 ${findingsText}
