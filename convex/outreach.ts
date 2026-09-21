@@ -42,8 +42,18 @@ export const sendDraft = mutation({
     const draft = await ctx.db.get(args.draftId);
     if (!draft || draft.userId !== userId)
       throw new Error("Draft not found.");
-    if (draft.status === "sent") throw new Error("Already sent.");
     if (!args.to.trim()) throw new Error("A recipient address is required.");
+    // Sending is queued in the background, so a draft can read "sent" while
+    // delivery actually failed. Allow retry in that case, block true doubles.
+    if (draft.status === "sent") {
+      const prior = draft.outboundId
+        ? await ctx.runQuery(components.agentmail.lib.getOutboundStatus, {
+            outboundId: draft.outboundId as never,
+          })
+        : null;
+      if (prior && prior.status !== "failed")
+        throw new Error("Already sent.");
+    }
 
     const { inboxId } = await resolveInboxId(ctx);
     const outboundId = await agentmail.sendMessage(ctx, inboxId, {
