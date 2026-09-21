@@ -8,6 +8,8 @@ const app = defineApp({
   env: {
     FIRECRAWL_API_KEY: v.string(),
     FIRECRAWL_WEBHOOK_SECRET: v.optional(v.string()),
+    AGENTMAIL_API_KEY: v.string(),
+    AGENTMAIL_WEBHOOK_SECRET: v.string(),
   },
 });
 
@@ -20,7 +22,12 @@ app.use(firecrawl, {
   },
 });
 
-app.use(agentmail);
+app.use(agentmail, {
+  env: {
+    AGENTMAIL_API_KEY: app.env.AGENTMAIL_API_KEY,
+    AGENTMAIL_WEBHOOK_SECRET: app.env.AGENTMAIL_WEBHOOK_SECRET,
+  },
+});
 
 // No httpPrefix: app-owned root routing. Auth routes, the AgentMail webhook,
 // and the static-hosting catch-all are registered in convex/http.ts.
