@@ -18,6 +18,7 @@ export default function BillDetail({
     api.outreach.sendStatus,
     sentDraftId ? { draftId: sentDraftId } : "skip",
   );
+  const setZipCode = useMutation(api.bills.setZipCode);
   const negotiate = useAction(api.negotiate.negotiateBill);
   const generateScript = useAction(api.negotiate.generateCallScript);
   const sendDraft = useMutation(api.outreach.sendDraft);
@@ -34,6 +35,7 @@ export default function BillDetail({
   const [savingsNote, setSavingsNote] = useState("");
   const [resendTo, setResendTo] = useState("");
   const [draftTab, setDraftTab] = useState<"email" | "script">("email");
+  const [zipInput, setZipInput] = useState<string | null>(null);
   const [scriptBusy, setScriptBusy] = useState(false);
 
   // The "Sending..." banner is set before the background delivery finishes;
@@ -178,6 +180,42 @@ export default function BillDetail({
               {bill.category} : {bill.billingPeriod}
               {bill.accountHint ? ` : ${bill.accountHint}` : ""}
             </p>
+            <div className="mt-2 flex items-center gap-2 text-sm">
+              <span className="text-slate-500">ZIP:</span>
+              {zipInput === null ? (
+                <button
+                  onClick={() => setZipInput(bill.zipCode ?? "")}
+                  className="text-slate-700 underline decoration-dotted underline-offset-2"
+                >
+                  {bill.zipCode ?? "add"}
+                </button>
+              ) : (
+                <>
+                  <input
+                    value={zipInput}
+                    onChange={(e) => setZipInput(e.target.value)}
+                    placeholder="95814"
+                    inputMode="numeric"
+                    className="w-24 rounded-lg border border-slate-300 px-2 py-1"
+                  />
+                  <button
+                    onClick={async () => {
+                      await setZipCode({ billId, zipCode: zipInput });
+                      setZipInput(null);
+                    }}
+                    className="rounded-lg bg-slate-900 text-white px-2.5 py-1 text-xs font-medium hover:bg-slate-700"
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={() => setZipInput(null)}
+                    className="text-xs text-slate-500"
+                  >
+                    Cancel
+                  </button>
+                </>
+              )}
+            </div>
           </div>
           <div className="text-right">
             <p className="text-3xl font-bold">{money(bill.amount)}</p>
