@@ -109,10 +109,13 @@ export default function BillDetail({
     }
   }
 
-  async function copyScript(text: string) {
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+
+  async function copyScript(text: string, key: string) {
     try {
       await navigator.clipboard.writeText(text);
-      setNotice("Script copied to clipboard.");
+      setCopiedKey(key);
+      setTimeout(() => setCopiedKey((k) => (k === key ? null : k)), 2000);
     } catch {
       setNotice("Copy failed. Select the text manually.");
     }
@@ -303,10 +306,10 @@ export default function BillDetail({
                   </div>
                   <div className="flex gap-2 mt-3">
                     <button
-                      onClick={() => pendingDraft.callScript && copyScript(pendingDraft.callScript)}
+                      onClick={() => pendingDraft.callScript && copyScript(pendingDraft.callScript, "pending")}
                       className="rounded-lg border border-slate-300 px-4 py-2 hover:bg-slate-100"
                     >
-                      Copy script
+                      {copiedKey === "pending" ? "Copied!" : "Copy script"}
                     </button>
                     <button
                       onClick={() => handleGenerateScript(pendingDraft._id)}
@@ -453,10 +456,10 @@ export default function BillDetail({
                 </div>
                 <div className="flex gap-2 mt-2">
                   <button
-                    onClick={() => sentDraft.callScript && copyScript(sentDraft.callScript)}
+                    onClick={() => sentDraft.callScript && copyScript(sentDraft.callScript, "sent")}
                     className="rounded-lg border border-slate-300 px-4 py-2 hover:bg-slate-100"
                   >
-                    Copy script
+                    {copiedKey === "sent" ? "Copied!" : "Copy script"}
                   </button>
                   <button
                     onClick={() => handleGenerateScript(sentDraft._id)}
