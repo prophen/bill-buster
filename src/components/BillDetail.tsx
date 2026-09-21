@@ -5,6 +5,19 @@ import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { STATUS_LABEL, STATUS_STYLE, money } from "./Dashboard";
 
+// Firecrawl returns raw markdown; the research panel shows plain text.
+function stripMd(s: string): string {
+  return s
+    .replace(/!\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/\[([^\]]*)\]\((?:[^)]*)?/g, "$1")
+    .replace(/\*\*([^*]+)\*\*/g, "$1")
+    .replace(/(^|\W)\*([^*\n]+)\*/g, "$1$2")
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/`/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export default function BillDetail({
   billId,
   onBack,
@@ -291,7 +304,7 @@ export default function BillDetail({
                     {c.competitorUrl}
                   </a>
                 )}
-                {c.notes && <p className="text-slate-500 mt-1">{c.notes.slice(0, 280)}</p>}
+                {c.notes && <p className="text-slate-500 mt-1">{stripMd(c.notes).slice(0, 280)}</p>}
               </li>
             ))}
           </ul>
