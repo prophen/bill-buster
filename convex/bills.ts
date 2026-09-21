@@ -259,6 +259,7 @@ export const markDraftSent = internalMutation({
   args: {
     draftId: v.id("drafts"),
     outboundId: v.string(),
+    deliveryStatus: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const draft = await ctx.db.get(args.draftId);
@@ -267,6 +268,8 @@ export const markDraftSent = internalMutation({
       status: "sent",
       sentAt: Date.now(),
       outboundId: args.outboundId,
+      deliveryStatus: args.deliveryStatus ?? "sent",
+      sendError: undefined,
     });
     await ctx.db.patch(draft.billId, {
       status: "sent",
