@@ -44,6 +44,7 @@ export default function BillDetail({
 
   const { bill, checks, drafts } = data;
   const pendingDraft = drafts.find((d) => d.status === "pending");
+  const sendingDraft = drafts.find((d) => d.status === "sending");
   const sentDraft = drafts.find((d) => d.status === "sent");
 
   async function runNegotiate() {
@@ -73,7 +74,7 @@ export default function BillDetail({
         subject: edits.subject,
         body: edits.body,
       });
-      setNotice("Sent. The vendor reply will land in your inbox.");
+      setNotice("Sending your email...");
     } catch (e) {
       setNotice(e instanceof Error ? e.message : "Send failed.");
     } finally {
@@ -92,7 +93,7 @@ export default function BillDetail({
         subject: sentDraft.subject,
         body: sentDraft.body,
       });
-      setNotice("Re-sent. The vendor reply will land in your inbox.");
+      setNotice("Sending again...");
     } catch (e) {
       setNotice(e instanceof Error ? e.message : "Send failed.");
     } finally {
@@ -185,6 +186,11 @@ export default function BillDetail({
           <p className="text-sm text-slate-500 mt-1">
             Review and edit. Nothing sends until you approve it.
           </p>
+          {pendingDraft.sendError && (
+            <p className="mt-2 text-sm rounded-lg bg-red-50 border border-red-200 text-red-700 px-3 py-2">
+              Last send failed: {pendingDraft.sendError} Fix the issue and try again.
+            </p>
+          )}
           {(() => {
             const ed = editsFor(pendingDraft._id, pendingDraft);
             const set = (patch: Partial<typeof ed>) =>
@@ -239,19 +245,26 @@ export default function BillDetail({
         </div>
       )}
 
+      {sendingDraft && (
+        <div className="bg-white rounded-2xl border border-slate-200 p-6">
+          <h2 className="font-semibold">Sending your email...</h2>
+          <p className="text-sm text-slate-500 mt-1">
+            Talking to AgentMail now. This usually takes a few seconds.
+          </p>
+        </div>
+      )}
+
       {sentDraft && bill.status === "sent" && (
         <div className="bg-white rounded-2xl border border-slate-200 p-6">
           <h2 className="font-semibold">Negotiation sent</h2>
           <p className="text-sm text-slate-500 mt-1">
             {delivery === undefined
               ? "Checking delivery status..."
-              : delivery === null
-                ? "Delivery status unavailable."
-                : delivery.status === "failed"
-                  ? `Delivery failed${delivery.errorMessage ? `: ${delivery.errorMessage}` : "."} You can retry below.`
-                  : `Delivery status: ${delivery.status}.`}
+              : delivery === null || !delivery.deliveryStatus
+                ? "Delivery not confirmed yet."
+                : "Sent via AgentMail."}
           </p>
-          {delivery?.status === "failed" && (
+          {!delivery?.deliveryStatus && (
             <button
               onClick={retrySend}
               disabled={busy}
