@@ -60,6 +60,7 @@ export default defineSchema({
     ),
     sendError: v.optional(v.string()),
     deliveryStatus: v.optional(v.string()),
+    callScript: v.optional(v.string()),
     createdAt: v.number(),
     sentAt: v.optional(v.number()),
     outboundId: v.optional(v.string()),
