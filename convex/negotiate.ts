@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { action, internalAction } from "./_generated/server";
 import { internal as generatedInternal, components } from "./_generated/api";
 import { FirecrawlClient } from "@firecrawl/firecrawl-convex";
+import { getAuthUserId } from "@convex-dev/auth/server";
 import type { Id } from "./_generated/dataModel";
 
 // Escape hatch for a type-level cycle: this module's inferred action types
@@ -143,14 +144,13 @@ async function checkPrices(
 export const negotiateBill = action({
   args: { billId: v.id("bills") },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Sign in first.");
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Sign in first.");
     const bill = await ctx.runQuery(internal.bills.getInternal, {
       billId: args.billId,
     });
     if (!bill) throw new Error("Bill not found.");
-    if (bill.userId !== identity.subject)
-      throw new Error("Not your bill.");
+    if (bill.userId !== userId) throw new Error("Not your bill.");
 
     await ctx.runMutation(internal.bills.setStatusInternal, {
       billId: args.billId,
@@ -185,7 +185,7 @@ The sender is a long-time customer asking politely but firmly for a better rate.
 
     const draftId = await ctx.runMutation(internal.bills.saveDraft, {
       billId: args.billId,
-      userId: identity.subject,
+      userId,
       subject: String(draft.subject ?? `Request to lower my ${bill.vendor} bill`),
       body: String(draft.body ?? ""),
       to: String(draft.to ?? ""),
