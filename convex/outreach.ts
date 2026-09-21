@@ -40,6 +40,7 @@ export const sendDraft = mutation({
     to: v.string(),
     subject: v.string(),
     body: v.string(),
+    force: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -47,11 +48,9 @@ export const sendDraft = mutation({
     const draft = await ctx.db.get(args.draftId);
     if (!draft || draft.userId !== userId)
       throw new Error("Draft not found.");
-    // A "sent" draft with confirmed delivery is final. A "sent" draft without
-    // delivery confirmation (e.g. the old component queue failed silently)
-    // can be re-sent. "sending" is also retryable: if a scheduled delivery
-    // never fired, the user must be able to kick it again.
-    if (draft.status === "sent" && draft.deliveryStatus === "sent")
+    // A "sent" draft with confirmed delivery is final, unless the user
+    // explicitly forces a resend (e.g. the first attempt bounced).
+    if (draft.status === "sent" && draft.deliveryStatus === "sent" && !args.force)
       throw new Error("Already sent.");
     if (
       draft.status !== "pending" &&
