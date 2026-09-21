@@ -47,13 +47,17 @@ export const sendDraft = mutation({
     const draft = await ctx.db.get(args.draftId);
     if (!draft || draft.userId !== userId)
       throw new Error("Draft not found.");
-    if (draft.status === "sending") throw new Error("Already sending.");
     // A "sent" draft with confirmed delivery is final. A "sent" draft without
     // delivery confirmation (e.g. the old component queue failed silently)
-    // can be re-sent.
+    // can be re-sent. "sending" is also retryable: if a scheduled delivery
+    // never fired, the user must be able to kick it again.
     if (draft.status === "sent" && draft.deliveryStatus === "sent")
       throw new Error("Already sent.");
-    if (draft.status !== "pending" && draft.status !== "sent")
+    if (
+      draft.status !== "pending" &&
+      draft.status !== "sent" &&
+      draft.status !== "sending"
+    )
       throw new Error("Already sent.");
     if (!args.to.trim()) throw new Error("A recipient address is required.");
 
