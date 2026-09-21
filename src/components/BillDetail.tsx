@@ -18,6 +18,7 @@ export default function BillDetail({
     sentDraftId ? { draftId: sentDraftId } : "skip",
   );
   const negotiate = useAction(api.negotiate.negotiateBill);
+  const generateScript = useAction(api.negotiate.generateCallScript);
   const sendDraft = useMutation(api.outreach.sendDraft);
   const discardDraft = useMutation(api.outreach.discardDraft);
   const recordSavings = useMutation(api.bills.recordSavings);
@@ -31,6 +32,8 @@ export default function BillDetail({
   const [newMonthly, setNewMonthly] = useState("");
   const [savingsNote, setSavingsNote] = useState("");
   const [resendTo, setResendTo] = useState("");
+  const [draftTab, setDraftTab] = useState<"email" | "script">("email");
+  const [scriptBusy, setScriptBusy] = useState(false);
 
   if (data === undefined) return <p className="text-slate-500">Loading...</p>;
   if (data === null)
@@ -86,6 +89,29 @@ export default function BillDetail({
       setNotice(e instanceof Error ? e.message : "Send failed.");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function handleGenerateScript() {
+    if (!pendingDraft) return;
+    setScriptBusy(true);
+    setNotice(null);
+    try {
+      await generateScript({ draftId: pendingDraft._id });
+    } catch (e) {
+      setNotice(e instanceof Error ? e.message : "Script generation failed.");
+    } finally {
+      setScriptBusy(false);
+    }
+  }
+
+  async function copyScript() {
+    if (!pendingDraft?.callScript) return;
+    try {
+      await navigator.clipboard.writeText(pendingDraft.callScript);
+      setNotice("Script copied to clipboard.");
+    } catch {
+      setNotice("Copy failed. Select the text manually.");
     }
   }
 
@@ -209,15 +235,71 @@ export default function BillDetail({
 
       {pendingDraft && (
         <div className="bg-white rounded-2xl border-2 border-violet-200 p-6">
-          <h2 className="font-semibold">Your negotiation email</h2>
-          <p className="text-sm text-slate-500 mt-1">
-            Review and edit. Nothing sends until you approve it.
-          </p>
+          <div className="flex gap-2 border-b border-slate-200">
+            {(["email", "script"] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => setDraftTab(t)}
+                className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px ${
+                  draftTab === t
+                    ? "border-violet-600 text-violet-700"
+                    : "border-transparent text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                {t === "email" ? "Email" : "Phone / chat script"}
+              </button>
+            ))}
+          </div>
           {pendingDraft.sendError && (
             <p className="mt-2 text-sm rounded-lg bg-red-50 border border-red-200 text-red-700 px-3 py-2">
               Last send failed: {pendingDraft.sendError} Fix the issue and try again.
             </p>
           )}
+          {draftTab === "script" ? (
+            <div className="mt-4">
+              {pendingDraft.callScript ? (
+                <>
+                  <pre className="whitespace-pre-wrap text-sm bg-slate-50 rounded-lg border border-slate-200 p-4 font-sans">
+                    {pendingDraft.callScript}
+                  </pre>
+                  <div className="flex gap-2 mt-3">
+                    <button
+                      onClick={copyScript}
+                      className="rounded-lg border border-slate-300 px-4 py-2 hover:bg-slate-100"
+                    >
+                      Copy script
+                    </button>
+                    <button
+                      onClick={handleGenerateScript}
+                      disabled={scriptBusy}
+                      className="rounded-lg border border-slate-300 px-4 py-2 hover:bg-slate-100 disabled:opacity-50"
+                    >
+                      {scriptBusy ? "Writing..." : "Regenerate"}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm text-slate-500">
+                    A short script for calling or chatting with {bill.vendor},
+                    built from the same research as the email: an opener, the
+                    ask, and comebacks for pushback.
+                  </p>
+                  <button
+                    onClick={handleGenerateScript}
+                    disabled={scriptBusy}
+                    className="mt-3 rounded-lg bg-violet-600 text-white px-4 py-2.5 font-medium hover:bg-violet-500 disabled:opacity-50"
+                  >
+                    {scriptBusy ? "Writing..." : "Generate phone script"}
+                  </button>
+                </>
+              )}
+            </div>
+          ) : (
+          <>
+          <p className="text-sm text-slate-500 mt-3">
+            Review and edit. Nothing sends until you approve it.
+          </p>
           {(() => {
             const ed = editsFor(pendingDraft._id, pendingDraft);
             const set = (patch: Partial<typeof ed>) =>
@@ -269,6 +351,8 @@ export default function BillDetail({
               </div>
             );
           })()}
+          </>
+          )}
         </div>
       )}
 
