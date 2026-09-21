@@ -12,6 +12,11 @@ export default function BillDetail({
   onBack: () => void;
 }) {
   const data = useQuery(api.bills.get, { billId });
+  const sentDraftId = data?.drafts.find((d) => d.status === "sent")?._id;
+  const delivery = useQuery(
+    api.outreach.sendStatus,
+    sentDraftId ? { draftId: sentDraftId } : "skip",
+  );
   const negotiate = useAction(api.negotiate.negotiateBill);
   const sendDraft = useMutation(api.outreach.sendDraft);
   const discardDraft = useMutation(api.outreach.discardDraft);
@@ -69,6 +74,25 @@ export default function BillDetail({
         body: edits.body,
       });
       setNotice("Sent. The vendor reply will land in your inbox.");
+    } catch (e) {
+      setNotice(e instanceof Error ? e.message : "Send failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function retrySend() {
+    if (!sentDraft) return;
+    setBusy(true);
+    setNotice(null);
+    try {
+      await sendDraft({
+        draftId: sentDraft._id,
+        to: sentDraft.to,
+        subject: sentDraft.subject,
+        body: sentDraft.body,
+      });
+      setNotice("Re-sent. The vendor reply will land in your inbox.");
     } catch (e) {
       setNotice(e instanceof Error ? e.message : "Send failed.");
     } finally {
@@ -219,6 +243,24 @@ export default function BillDetail({
         <div className="bg-white rounded-2xl border border-slate-200 p-6">
           <h2 className="font-semibold">Negotiation sent</h2>
           <p className="text-sm text-slate-500 mt-1">
+            {delivery === undefined
+              ? "Checking delivery status..."
+              : delivery === null
+                ? "Delivery status unavailable."
+                : delivery.status === "failed"
+                  ? `Delivery failed${delivery.errorMessage ? `: ${delivery.errorMessage}` : "."} You can retry below.`
+                  : `Delivery status: ${delivery.status}.`}
+          </p>
+          {delivery?.status === "failed" && (
+            <button
+              onClick={retrySend}
+              disabled={busy}
+              className="mt-3 rounded-lg bg-slate-900 text-white px-4 py-2.5 font-medium hover:bg-slate-700 disabled:opacity-50"
+            >
+              {busy ? "Retrying..." : "Retry send"}
+            </button>
+          )}
+          <p className="text-sm text-slate-500 mt-4">
             Got a lower rate? Record it so your savings total stays honest.
           </p>
           <div className="mt-4 flex flex-wrap gap-2 items-end">
