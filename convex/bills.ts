@@ -98,6 +98,7 @@ export const create = mutation({
     amount: v.number(),
     billingPeriod: v.string(),
     accountHint: v.optional(v.string()),
+    zipCode: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -113,10 +114,28 @@ export const create = mutation({
       currency: "USD",
       billingPeriod: args.billingPeriod,
       accountHint: args.accountHint,
+      zipCode: args.zipCode,
       status: "new",
       source: "manual",
       createdAt: now,
       updatedAt: now,
+    });
+  },
+});
+
+export const setZipCode = mutation({
+  args: { billId: v.id("bills"), zipCode: v.string() },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Sign in first.");
+    const bill = await ctx.db.get(args.billId);
+    if (!bill) throw new Error("Bill not found.");
+    const user = await ctx.db.get(userId);
+    if (!ownsBill(bill, userId, user?.email ?? undefined))
+      throw new Error("Not your bill.");
+    await ctx.db.patch(args.billId, {
+      zipCode: args.zipCode.trim() || undefined,
+      updatedAt: Date.now(),
     });
   },
 });
