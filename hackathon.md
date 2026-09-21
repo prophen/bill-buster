@@ -28,3 +28,8 @@ Scaffolded the full app. Schema with bills, priceChecks, drafts, savings tables 
 
 ### 2026-09-20 - delivery status and retry in UI
 - The bill detail never showed real delivery status and a "sent" draft had no retry path in the UI. Added: live delivery status on the sent panel (via the existing `sendStatus` query) and a Retry send button that appears when delivery failed (`src/components/BillDetail.tsx`).
+
+### 2026-09-20 - direct AgentMail send (component env bug)
+- Root cause of the send failure: `@agentmail/convex@0.1.0` reads `AGENTMAIL_API_KEY` inside component code but never declares the env var in its `defineComponent`, so Convex gives the component an empty env and there is no supported way to inject the key (`app.use(agentmail, { env })` fails push validation). Sending now goes straight to the AgentMail REST API (`POST /inboxes/{id}/messages/send`) from an app-side action, which can see deployment env vars. The component is still used for inbound webhook handling, which needs no API key.
+- New send flow: `sendDraft` mutation validates and marks the draft "sending", then schedules `deliverDraft` (internal action). On success the draft is marked sent with the AgentMail message id; on failure it returns to pending with `sendError` shown in the UI. A "sent" draft with confirmed delivery is still protected from double-sending; legacy stuck drafts can be re-sent.
+- UI: sending indicator, failure notice on the draft panel, delivery confirmation on the sent panel, retry button when delivery was never confirmed (`convex/outreach.ts`, `convex/bills.ts`, `convex/schema.ts`, `src/components/BillDetail.tsx`).
