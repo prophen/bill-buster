@@ -79,8 +79,9 @@ async function checkPrices(
   const bill = await ctx.runQuery(internal.bills.getInternal, { billId });
   if (!bill) throw new Error("Bill not found.");
 
-  const zip = bill.zipCode ? ` ${bill.zipCode}` : "";
-  const query = `${bill.vendor} ${bill.category} cheaper alternatives promo pricing 2026${zip}`;
+  const query = bill.zipCode
+    ? `cheaper ${bill.category} alternatives to ${bill.vendor} in ${bill.zipCode} 2026 prices plans`
+    : `${bill.vendor} ${bill.category} cheaper alternatives promo pricing 2026`;
   let results: any[] = [];
   try {
     const search = await firecrawl.search(ctx as never, query, {
