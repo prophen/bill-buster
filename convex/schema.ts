@@ -26,6 +26,7 @@ export default defineSchema({
     currency: v.string(),
     billingPeriod: v.string(),
     accountHint: v.optional(v.string()),
+    zipCode: v.optional(v.string()),
     status: billStatus,
     source: v.union(v.literal("email"), v.literal("manual")),
     sourceMessageId: v.optional(v.string()),
