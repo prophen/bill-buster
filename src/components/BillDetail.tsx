@@ -20,6 +20,7 @@ export default function BillDetail({
   );
   const setZipCode = useMutation(api.bills.setZipCode);
   const negotiate = useAction(api.negotiate.negotiateBill);
+  const recheckPrices = useAction(api.negotiate.recheckPrices);
   const generateScript = useAction(api.negotiate.generateCallScript);
   const sendDraft = useMutation(api.outreach.sendDraft);
   const discardDraft = useMutation(api.outreach.discardDraft);
@@ -38,6 +39,7 @@ export default function BillDetail({
   const [zipInput, setZipInput] = useState<string | null>(null);
   const [scriptBusy, setScriptBusy] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [recheckBusy, setRecheckBusy] = useState(false);
 
   // The "Sending..." banner is set before the background delivery finishes;
   // clear it once no draft is in the sending state. Must run before any
@@ -117,6 +119,19 @@ export default function BillDetail({
       setTimeout(() => setCopiedKey((k) => (k === key ? null : k)), 2000);
     } catch {
       setNotice("Copy failed. Select the text manually.");
+    }
+  }
+
+  async function handleRecheck() {
+    setRecheckBusy(true);
+    setNotice(null);
+    try {
+      const res = await recheckPrices({ billId });
+      setNotice(`Re-checked ${res.findings} sources with your ZIP code.`);
+    } catch (e) {
+      setNotice(e instanceof Error ? e.message : "Re-check failed.");
+    } finally {
+      setRecheckBusy(false);
     }
   }
 
@@ -245,7 +260,16 @@ export default function BillDetail({
 
       {checks.length > 0 && (
         <div className="bg-white rounded-2xl border border-slate-200 p-6">
-          <h2 className="font-semibold mb-3">What competitors charge</h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-semibold">What competitors charge</h2>
+            <button
+              onClick={handleRecheck}
+              disabled={recheckBusy}
+              className="text-sm rounded-lg border border-slate-300 px-3 py-1.5 hover:bg-slate-100 disabled:opacity-50"
+            >
+              {recheckBusy ? "Checking..." : "Re-check prices"}
+            </button>
+          </div>
           <ul className="space-y-3">
             {checks.map((c) => (
               <li key={c._id} className="text-sm border-b border-slate-100 pb-3 last:border-0">
