@@ -22,12 +22,7 @@ app.use(firecrawl, {
   },
 });
 
-app.use(agentmail, {
-  env: {
-    AGENTMAIL_API_KEY: app.env.AGENTMAIL_API_KEY,
-    AGENTMAIL_WEBHOOK_SECRET: app.env.AGENTMAIL_WEBHOOK_SECRET,
-  },
-});
+app.use(agentmail);
 
 // No httpPrefix: app-owned root routing. Auth routes, the AgentMail webhook,
 // and the static-hosting catch-all are registered in convex/http.ts.
