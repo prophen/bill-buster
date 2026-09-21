@@ -21,7 +21,7 @@ Rules:
 - Ask for a specific outcome: match the competitor price, a loyalty discount, or a promo rate.
 - End with a simple call to action (reply, or a number to call).
 Reply with JSON only, no markdown fences: {"subject": "...", "body": "...", "to": "..."}.
-"to" should be the vendor billing or retention email if you know it, otherwise leave it empty.`;
+"to" should be the vendor billing or retention email if you know it, otherwise leave it empty. Never invent or guess an email address.`;
 
 async function openAIJson(system: string, user: string): Promise<any> {
   const apiKey = process.env.OPENAI_API_KEY;
