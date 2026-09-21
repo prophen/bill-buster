@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useAction } from "convex/react";
+import ReactMarkdown from "react-markdown";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { STATUS_LABEL, STATUS_STYLE, money } from "./Dashboard";
@@ -259,9 +260,9 @@ export default function BillDetail({
             <div className="mt-4">
               {pendingDraft.callScript ? (
                 <>
-                  <pre className="whitespace-pre-wrap text-sm bg-slate-50 rounded-lg border border-slate-200 p-4 font-sans">
-                    {pendingDraft.callScript}
-                  </pre>
+                  <div className="text-sm bg-slate-50 rounded-lg border border-slate-200 p-4 max-w-none [&_h2]:text-base [&_h2]:font-semibold [&_h2]:mt-4 [&_h2]:mb-1 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:mt-3 [&_h3]:mb-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-2 [&_p]:mb-2 [&_strong]:font-semibold">
+                    <ReactMarkdown>{pendingDraft.callScript}</ReactMarkdown>
+                  </div>
                   <div className="flex gap-2 mt-3">
                     <button
                       onClick={() => pendingDraft.callScript && copyScript(pendingDraft.callScript)}
@@ -409,9 +410,9 @@ export default function BillDetail({
             <p className="text-sm font-medium">Phone / chat script</p>
             {sentDraft.callScript ? (
               <>
-                <pre className="mt-2 whitespace-pre-wrap text-sm bg-slate-50 rounded-lg border border-slate-200 p-4 font-sans">
-                  {sentDraft.callScript}
-                </pre>
+                <div className="mt-2 text-sm bg-slate-50 rounded-lg border border-slate-200 p-4 [&_h2]:text-base [&_h2]:font-semibold [&_h2]:mt-4 [&_h2]:mb-1 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:mt-3 [&_h3]:mb-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-2 [&_p]:mb-2 [&_strong]:font-semibold">
+                  <ReactMarkdown>{sentDraft.callScript}</ReactMarkdown>
+                </div>
                 <div className="flex gap-2 mt-2">
                   <button
                     onClick={() => sentDraft.callScript && copyScript(sentDraft.callScript)}
