@@ -248,7 +248,7 @@ export default function BillDetail({
                       await setZipCode({ billId, zipCode: zipInput });
                       setZipInput(null);
                     }}
-                    className="rounded-lg bg-slate-900 text-white px-2.5 py-1 text-xs font-medium hover:bg-slate-700"
+                    className="rounded-lg bg-emerald-600 text-white px-2.5 py-1 text-xs font-medium hover:bg-emerald-700"
                   >
                     Save
                   </button>
@@ -276,7 +276,7 @@ export default function BillDetail({
           <button
             onClick={runNegotiate}
             disabled={busy}
-            className="mt-6 rounded-lg bg-slate-900 text-white px-4 py-2.5 font-medium hover:bg-slate-700 disabled:opacity-50"
+            className="mt-6 rounded-lg bg-emerald-600 text-white px-4 py-2.5 font-medium hover:bg-emerald-700 disabled:opacity-50"
           >
             {busy ? "Checking prices..." : "Check prices and draft my email"}
           </button>
@@ -471,7 +471,7 @@ export default function BillDetail({
             <button
               onClick={retrySend}
               disabled={busy}
-              className="mt-3 rounded-lg bg-slate-900 text-white px-4 py-2.5 font-medium hover:bg-slate-700 disabled:opacity-50"
+              className="mt-3 rounded-lg bg-emerald-600 text-white px-4 py-2.5 font-medium hover:bg-emerald-700 disabled:opacity-50"
             >
               {busy ? "Retrying..." : "Retry send"}
             </button>
@@ -491,7 +491,7 @@ export default function BillDetail({
               <button
                 onClick={resendToAddress}
                 disabled={busy || !resendTo.trim()}
-                className="rounded-lg bg-slate-900 text-white px-4 py-2 font-medium hover:bg-slate-700 disabled:opacity-50"
+                className="rounded-lg bg-emerald-600 text-white px-4 py-2 font-medium hover:bg-emerald-700 disabled:opacity-50"
               >
                 Resend
               </button>
@@ -565,7 +565,7 @@ export default function BillDetail({
                 await recordSavings({ billId, newMonthly: n, note: savingsNote || undefined });
                 setNotice("Savings recorded. Nice work.");
               }}
-              className="rounded-lg bg-slate-900 text-white px-4 py-2.5 font-medium hover:bg-slate-700"
+              className="rounded-lg bg-emerald-600 text-white px-4 py-2.5 font-medium hover:bg-emerald-700"
             >
               Record savings
             </button>
