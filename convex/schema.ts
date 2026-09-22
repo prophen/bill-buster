@@ -28,7 +28,7 @@ export default defineSchema({
     accountHint: v.optional(v.string()),
     zipCode: v.optional(v.string()),
     status: billStatus,
-    source: v.union(v.literal("email"), v.literal("manual")),
+    source: v.union(v.literal("email"), v.literal("manual"), v.literal("pasted")),
     sourceMessageId: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
