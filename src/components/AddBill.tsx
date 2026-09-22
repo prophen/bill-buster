@@ -94,7 +94,7 @@ export default function AddBill({
           onClick={() => setMode("paste")}
           className={`${tab} ${
             mode === "paste"
-              ? "bg-slate-900 text-white border-slate-900"
+              ? "bg-emerald-600 text-white border-emerald-600"
               : "border-slate-300 hover:bg-slate-100"
           }`}
         >
@@ -105,7 +105,7 @@ export default function AddBill({
           onClick={() => setMode("manual")}
           className={`${tab} ${
             mode === "manual"
-              ? "bg-slate-900 text-white border-slate-900"
+              ? "bg-emerald-600 text-white border-emerald-600"
               : "border-slate-300 hover:bg-slate-100"
           }`}
         >
@@ -134,7 +134,7 @@ export default function AddBill({
           <button
             type="submit"
             disabled={busy}
-            className="w-full rounded-lg bg-slate-900 text-white py-2.5 font-medium hover:bg-slate-700 disabled:opacity-50"
+            className="w-full rounded-lg bg-emerald-600 text-white py-2.5 font-medium hover:bg-emerald-700 disabled:opacity-50"
           >
             {busy ? "Reading..." : "Extract bill details"}
           </button>
@@ -223,7 +223,7 @@ export default function AddBill({
         <button
           type="submit"
           disabled={busy}
-          className="w-full rounded-lg bg-slate-900 text-white py-2.5 font-medium hover:bg-slate-700 disabled:opacity-50"
+          className="w-full rounded-lg bg-emerald-600 text-white py-2.5 font-medium hover:bg-emerald-700 disabled:opacity-50"
         >
           {busy ? "Adding..." : "Add bill"}
         </button>
