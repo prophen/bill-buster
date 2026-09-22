@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuthActions } from "@convex-dev/auth/react";
+import Logo from "./Logo";
 
 export default function SignIn() {
   const { signIn } = useAuthActions();
@@ -23,9 +24,12 @@ export default function SignIn() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-emerald-50/70 via-slate-50 to-slate-50 px-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
-        <h1 className="text-2xl font-bold tracking-tight">Bill Buster</h1>
+        <div className="flex items-center gap-2.5">
+          <Logo size={34} />
+          <h1 className="text-2xl font-bold tracking-tight">Bill Buster</h1>
+        </div>
         <p className="mt-2 text-slate-600">
           Paste a bill, pay less. Sign in to track your bills and the money
           you save negotiating them down.
@@ -61,7 +65,7 @@ export default function SignIn() {
           <button
             type="submit"
             disabled={busy}
-            className="w-full rounded-lg bg-slate-900 text-white py-2.5 font-medium hover:bg-slate-700 disabled:opacity-50"
+            className="w-full rounded-lg bg-emerald-600 text-white py-2.5 font-medium hover:bg-emerald-700 disabled:opacity-50"
           >
             {busy
               ? "Working..."
