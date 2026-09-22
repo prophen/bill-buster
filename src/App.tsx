@@ -6,6 +6,7 @@ import Dashboard from "./components/Dashboard";
 import BillDetail from "./components/BillDetail";
 import AddBill from "./components/AddBill";
 import Settings from "./components/Settings";
+import Logo from "./components/Logo";
 import type { Id } from "../convex/_generated/dataModel";
 
 export type View =
@@ -32,19 +33,22 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <header className="bg-white border-b border-slate-200">
+    <div className="min-h-screen bg-gradient-to-b from-emerald-50/70 via-slate-50 to-slate-50 text-slate-900">
+      <header className="bg-white/90 backdrop-blur border-b border-slate-200">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
           <button
             onClick={() => setView({ name: "dashboard" })}
-            className="text-xl font-bold tracking-tight"
+            className="flex items-center gap-2.5"
           >
-            Bill Buster
+            <Logo size={30} />
+            <span className="text-xl font-bold tracking-tight">
+              Bill Buster
+            </span>
           </button>
           <nav className="flex items-center gap-2 text-sm">
             <button
               onClick={() => setView({ name: "add" })}
-              className="px-3 py-1.5 rounded-lg bg-slate-900 text-white hover:bg-slate-700"
+              className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 font-medium"
             >
               Add a bill
             </button>
@@ -52,7 +56,7 @@ export default function App() {
               onClick={() => setView({ name: "settings" })}
               className="px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-100"
             >
-              Inbox
+              How it works
             </button>
             <button
               onClick={() => signOut()}
