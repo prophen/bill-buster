@@ -26,6 +26,7 @@ export default function BillDetail({
   const discardDraft = useMutation(api.outreach.discardDraft);
   const recordSavings = useMutation(api.bills.recordSavings);
   const updateStatus = useMutation(api.bills.updateStatus);
+  const removeBill = useMutation(api.bills.remove);
 
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -135,6 +136,24 @@ export default function BillDetail({
     }
   }
 
+  async function handleDelete() {
+    if (
+      !window.confirm(
+        `Delete ${bill.vendor} and all its research, drafts, and savings? This cannot be undone.`
+      )
+    )
+      return;
+    setBusy(true);
+    try {
+      await removeBill({ billId });
+      onBack();
+    } catch (e) {
+      setNotice(e instanceof Error ? e.message : "Delete failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function retrySend() {
     if (!sentDraft) return;
     setBusy(true);
@@ -185,9 +204,18 @@ export default function BillDetail({
 
   return (
     <div className="space-y-6">
-      <button onClick={onBack} className="text-sm text-slate-500 hover:text-slate-900">
-        ← Back to bills
-      </button>
+      <div className="flex items-center justify-between">
+        <button onClick={onBack} className="text-sm text-slate-500 hover:text-slate-900">
+          ← Back to bills
+        </button>
+        <button
+          onClick={handleDelete}
+          disabled={busy}
+          className="text-sm text-red-600 hover:text-red-800 disabled:opacity-50"
+        >
+          Delete bill
+        </button>
+      </div>
 
       <div className="bg-white rounded-2xl border border-slate-200 p-6">
         <div className="flex items-start justify-between gap-4">
