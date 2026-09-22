@@ -467,6 +467,23 @@ export default function BillDetail({
                 ? "Delivery not confirmed yet."
                 : "Sent via AgentMail."}
           </p>
+          <details className="mt-4 rounded-lg border border-slate-200 bg-slate-50">
+            <summary className="cursor-pointer px-4 py-2.5 text-sm font-medium text-slate-700 hover:text-slate-900">
+              View sent email
+            </summary>
+            <div className="px-4 pb-4 text-sm space-y-2">
+              <p>
+                <span className="font-medium">To:</span> {sentDraft.to}
+              </p>
+              <p>
+                <span className="font-medium">Subject:</span>{" "}
+                {sentDraft.subject}
+              </p>
+              <div className="whitespace-pre-wrap rounded-lg bg-white border border-slate-200 p-3">
+                {sentDraft.body}
+              </div>
+            </div>
+          </details>
           {!delivery?.deliveryStatus && (
             <button
               onClick={retrySend}
