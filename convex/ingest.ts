@@ -1,6 +1,13 @@
 import { v } from "convex/values";
-import { internalMutation, internalAction } from "./_generated/server";
-import { internal } from "./_generated/api";
+import { action, internalMutation, internalAction } from "./_generated/server";
+import { internal as generatedInternal } from "./_generated/api";
+import { getAuthUserId } from "@convex-dev/auth/server";
+
+// Escape hatch for a type-level cycle: this module's inferred action types
+// feed the generated `internal` API type, so referencing `internal` here
+// directly makes tsc chase its own tail (TS7022). At runtime this is the
+// exact same object; only the type is loosened.
+const internal: any = generatedInternal;
 
 type InboundMessage = {
   message_id?: string;
@@ -120,6 +127,50 @@ async function openAIJson(system: string, user: string): Promise<any> {
   const content = data.choices?.[0]?.message?.content ?? "{}";
   return JSON.parse(content);
 }
+
+// User-facing: paste the content of a bill email when forwarding to the
+// AgentMail inbox is not available. Runs the same extraction pipeline.
+export const ingestPastedBill = action({
+  args: { emailText: v.string() },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Sign in first.");
+    const text = args.emailText.trim();
+    if (text.length < 20) {
+      throw new Error("Paste the content of the bill email first.");
+    }
+    const billId = await ctx.runMutation(internal.ingest.createPastedBill, {
+      userId,
+      emailText: text.slice(0, 12000),
+    });
+    return { billId };
+  },
+});
+
+export const createPastedBill = internalMutation({
+  args: { userId: v.string(), emailText: v.string() },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const billId = await ctx.db.insert("bills", {
+      userId: args.userId,
+      senderEmail: "pasted",
+      vendor: "Extracting...",
+      category: "other",
+      amount: 0,
+      currency: "USD",
+      billingPeriod: "monthly",
+      status: "extracting",
+      source: "pasted",
+      createdAt: now,
+      updatedAt: now,
+    });
+    await ctx.scheduler.runAfter(0, internal.ingest.extractBill, {
+      billId,
+      emailText: args.emailText,
+    });
+    return billId;
+  },
+});
 
 // Runs in an action (network access), then writes via internal mutation.
 export const extractBill = internalAction({
