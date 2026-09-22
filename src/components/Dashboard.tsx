@@ -61,7 +61,7 @@ export default function Dashboard({
         <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center">
           <h2 className="text-lg font-semibold">No bills yet</h2>
           <p className="mt-2 text-slate-600 max-w-md mx-auto">
-            Forward any bill email to your Bill Buster inbox, or add one
+            Copy the content of a bill email and paste it in, or add one
             manually. We will check what competitors charge and draft the
             negotiation email for you.
           </p>
