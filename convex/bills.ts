@@ -123,6 +123,35 @@ export const create = mutation({
   },
 });
 
+export const remove = mutation({
+  args: { billId: v.id("bills") },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Sign in first.");
+    const bill = await ctx.db.get(args.billId);
+    if (!bill) throw new Error("Bill not found.");
+    if (bill.userId !== userId) throw new Error("Not your bill.");
+    const checks = await ctx.db
+      .query("priceChecks")
+      .withIndex("by_bill", (q) => q.eq("billId", args.billId))
+      .collect();
+    for (const c of checks) await ctx.db.delete(c._id);
+    const drafts = await ctx.db
+      .query("drafts")
+      .withIndex("by_bill", (q) => q.eq("billId", args.billId))
+      .collect();
+    for (const d of drafts) await ctx.db.delete(d._id);
+    const savings = await ctx.db
+      .query("savings")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
+    for (const s of savings) {
+      if (s.billId === args.billId) await ctx.db.delete(s._id);
+    }
+    await ctx.db.delete(args.billId);
+  },
+});
+
 export const setZipCode = mutation({
   args: { billId: v.id("bills"), zipCode: v.string() },
   handler: async (ctx, args) => {
