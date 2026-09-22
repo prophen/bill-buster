@@ -27,7 +27,7 @@ export default function SignIn() {
       <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
         <h1 className="text-2xl font-bold tracking-tight">Bill Buster</h1>
         <p className="mt-2 text-slate-600">
-          Forward a bill, pay less. Sign in to track your bills and the money
+          Paste a bill, pay less. Sign in to track your bills and the money
           you save negotiating them down.
         </p>
         <form onSubmit={submit} className="mt-6 space-y-4">
