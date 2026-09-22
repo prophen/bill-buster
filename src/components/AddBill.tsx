@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation } from "convex/react";
+import { useMutation, useAction } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 
@@ -20,6 +20,9 @@ export default function AddBill({
   onDone: (billId: Id<"bills"> | null) => void;
 }) {
   const create = useMutation(api.bills.create);
+  const ingestPasted = useAction(api.ingest.ingestPastedBill);
+  const [mode, setMode] = useState<"manual" | "paste">("paste");
+  const [pastedText, setPastedText] = useState("");
   const [vendor, setVendor] = useState("");
   const [category, setCategory] = useState("internet");
   const [amount, setAmount] = useState("");
@@ -55,14 +58,88 @@ export default function AddBill({
     }
   }
 
+  async function submitPaste(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (pastedText.trim().length < 20) {
+      setError("Paste the content of the bill email first.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const { billId } = await ingestPasted({ emailText: pastedText.trim() });
+      onDone(billId);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not add the bill.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const input = "w-full rounded-lg border border-slate-300 px-3 py-2";
+
+  const tab =
+    "flex-1 rounded-lg px-3 py-2 text-sm font-medium border transition";
 
   return (
     <div className="max-w-lg mx-auto bg-white rounded-2xl border border-slate-200 p-6">
       <h1 className="text-xl font-bold">Add a bill</h1>
       <p className="text-sm text-slate-500 mt-1">
-        Add it manually, or forward the bill email to your inbox instead.
+        Paste the content of a bill email and we will pull out the details, or
+        add it manually.
       </p>
+      <div className="flex gap-2 mt-4">
+        <button
+          type="button"
+          onClick={() => setMode("paste")}
+          className={`${tab} ${
+            mode === "paste"
+              ? "bg-slate-900 text-white border-slate-900"
+              : "border-slate-300 hover:bg-slate-100"
+          }`}
+        >
+          Paste bill email
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode("manual")}
+          className={`${tab} ${
+            mode === "manual"
+              ? "bg-slate-900 text-white border-slate-900"
+              : "border-slate-300 hover:bg-slate-100"
+          }`}
+        >
+          Add manually
+        </button>
+      </div>
+      {mode === "paste" ? (
+        <form onSubmit={submitPaste} className="mt-5 space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Bill email content
+            </label>
+            <textarea
+              value={pastedText}
+              onChange={(e) => setPastedText(e.target.value)}
+              placeholder="Copy the content of your bill email and paste it here..."
+              rows={10}
+              className={`${input} font-mono text-xs`}
+            />
+          </div>
+          {error && (
+            <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">
+              {error}
+            </p>
+          )}
+          <button
+            type="submit"
+            disabled={busy}
+            className="w-full rounded-lg bg-slate-900 text-white py-2.5 font-medium hover:bg-slate-700 disabled:opacity-50"
+          >
+            {busy ? "Reading..." : "Extract bill details"}
+          </button>
+        </form>
+      ) : (
       <form onSubmit={submit} className="mt-5 space-y-4">
         <div>
           <label className="block text-sm font-medium mb-1">Vendor</label>
@@ -151,6 +228,7 @@ export default function AddBill({
           {busy ? "Adding..." : "Add bill"}
         </button>
       </form>
+      )}
     </div>
   );
 }
