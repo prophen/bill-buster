@@ -4,6 +4,10 @@ Forward a bill, pay less. Built for the Convex "All Gas" Hackathon.
 
 Bill Buster gives you an inbox address. Forward any bill email (internet, mobile, insurance, subscriptions) and it extracts what you pay, checks competitor and vendor promo pricing with Firecrawl, drafts a negotiation email with OpenAI, and sends it through AgentMail once you approve. A live dashboard tracks your bills and total savings.
 
+## Demo
+
+[![Bill Buster demo video](https://img.youtube.com/vi/jZWoIH1JpZU/hqdefault.jpg)](https://youtu.be/jZWoIH1JpZU)
+
 ## Stack
 
 - Frontend: Vite + React + TypeScript + Tailwind, served from Convex via the `@convex-dev/static-hosting` component (`*.convex.site`)
